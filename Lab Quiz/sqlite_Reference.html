@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Query Language Understood by SQLite</title>
+<style>
+  body{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+       color:#1a1a1a;background:#ffffff;line-height:1.55;
+       max-width:820px;margin:0 auto;padding:26px 22px 90px;}
+  h1{font-size:26px;margin:0 0 4px;font-weight:600;}
+  .intro{color:#333;font-size:15px;margin:10px 0 4px;}
+  .intro a{color:#044a86;}
+  .hint{color:#666;font-size:13px;margin:14px 0 20px;}
+  .controls{margin:0 0 14px;}
+  .controls button{font-size:12.5px;padding:5px 11px;margin-right:6px;cursor:pointer;
+       border:1px solid #cfd6db;background:#f4f6f8;border-radius:5px;color:#233;}
+  .controls button:hover{background:#e9edf1;}
+
+  details{border-bottom:1px solid #e4e8eb;}
+  details > summary{cursor:pointer;list-style:none;padding:11px 4px 11px 26px;position:relative;
+       font-size:16.5px;color:#044a86;font-weight:600;}
+  details > summary::-webkit-details-marker{display:none;}
+  details > summary::before{content:"\25B6";position:absolute;left:6px;top:12px;
+       font-size:11px;color:#8a97a0;transition:transform .12s ease;}
+  details[open] > summary::before{transform:rotate(90deg);}
+  details > summary:hover{text-decoration:underline;}
+  details[open] > summary{color:#7a1f1f;}
+
+  .body{padding:2px 8px 20px 26px;font-size:15px;color:#1c1c1c;}
+  .body h4{font-size:14.5px;margin:16px 0 4px;color:#333;}
+  .body p{margin:9px 0;}
+  .body dl{margin:8px 0;}
+  .body dt{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:13px;
+       color:#7a1f1f;margin:11px 0 2px;font-weight:600;}
+  .body dd{margin:0 0 2px 18px;color:#2a2a2a;}
+  .body ul.siglist{columns:2;-webkit-columns:2;margin:6px 0;padding-left:20px;
+       font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#333;}
+  .body pre{background:#f5f7f8;border:1px solid #e3e8eb;border-radius:6px;
+       padding:11px 13px;overflow-x:auto;font-family:ui-monospace,Consolas,monospace;
+       font-size:12.8px;line-height:1.5;color:#233;}
+  .body code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;}
+  footer{margin-top:34px;padding-top:14px;border-top:1px solid #e4e8eb;color:#777;font-size:12.5px;}
+  footer a{color:#044a86;}
+  @media print{details{break-inside:avoid;} details[open] > summary::before{content:"";}}
+  .body pre.syntax{background:#fbfaf4;border:1px solid #e6e0c8;
+       border-left:4px solid #b8860b;color:#3a3320;}
+  .body .syntax-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+       color:#8a6d1f;font-weight:700;margin:14px 0 3px;}
+</style>
+</head>
+<body>
+<h1>SQL As Understood By SQLite</h1>
+<p class="intro">SQLite understands most of the standard SQL language. But it does omit some features
+while at the same time adding a few features of its own. The topics below describe what parts of the SQL
+language SQLite does and does not support. Click any topic to expand its description.
+Full official documentation lives at <a href="https://www.sqlite.org/lang.html">sqlite.org/lang.html</a>.</p>
+<p class="hint">Each topic below shows its <b>syntax</b> (railroad grammar as a text template) followed by a description. Notation: <code>UPPERCASE</code> = keyword, <code>lowercase</code> = placeholder, <code>[&nbsp;]</code> = optional, <code>{a|b}</code> = choose one, <code>...</code> = repeatable.</p>
+
+<div class="controls">
+  <button type="button" onclick="document.querySelectorAll('details').forEach(function(d){d.open=true;})">Expand all</button>
+  <button type="button" onclick="document.querySelectorAll('details').forEach(function(d){d.open=false;})">Collapse all</button>
+</div>
+
+<details id="aggregate-functions">
+<summary>aggregate functions</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">aggregate-name( [DISTINCT] expr [, expr]... )
+  [ ORDER BY term [, ...] ]
+  [ FILTER ( WHERE expr ) ]
+-- e.g.  count(DISTINCT x)   string_agg(x, &#x27;,&#x27; ORDER BY x)</pre>
+
+<p>The aggregate functions shown below are available by default. There are two more aggregates grouped with the JSON SQL functions. Applications can define custom aggregate functions using the sqlite3_create_function() interface.</p>
+
+<p>In any aggregate function that takes a single argument, that argument can be preceded by the keyword DISTINCT. In such cases, duplicate elements are filtered before being passed into the aggregate function. For example, the function "count(distinct X)" will return the number of distinct values of column X instead of the total number of non-null values in column X.</p>
+
+<p>If a FILTER clause is provided, then only rows for which the expr is true are included in the aggregate.</p>
+
+<p>If an ORDER BY clause is provided, that clause determines the order in which the inputs to the aggregate are processed. For aggregate functions like max() and count(), the input order does not matter. But for things like string_agg() and json_group_object(), the ORDER BY clause will make a difference in the result. If no ORDER BY clause is specified, the inputs to the aggregate occur in an arbitrary order that might change from one invocation to the next.</p>
+
+<p><em>See also: scalar functions and window functions.</em></p>
+
+<h4>List of built-in aggregate functions</h4>
+<ul class="siglist">
+<li>avg(X)</li>
+<li>count(*)</li>
+<li>count(X)</li>
+<li>group_concat(X)</li>
+<li>group_concat(X,Y)</li>
+<li>max(X)</li>
+<li>median(X)</li>
+<li>min(X)</li>
+<li>percentile(Y,P)</li>
+<li>percentile_cont(Y,P)</li>
+<li>percentile_disc(Y,P)</li>
+<li>string_agg(X,Y)</li>
+<li>sum(X)</li>
+<li>total(X)</li>
+</ul>
+
+<h4>Descriptions of built-in aggregate functions</h4>
+
+<dl>
+<dt>avg(X)</dt>
+<dd>The avg() function returns the average value of all non-NULL X within a group. String and BLOB values that do not look like numbers are interpreted as 0. The result of avg() is always a floating point value whenever there is at least one non-NULL input even if all inputs are integers. The result of avg() is NULL if there are no non-NULL inputs. The result of avg() is computed as total()/count() so all of the constraints that apply to total() also apply to avg().</dd>
+
+<dt>count(X)<br>count(*)</dt>
+<dd>The count(X) function returns a count of the number of times that X is not NULL in a group. The count(*) function (with no arguments) returns the total number of rows in the group.</dd>
+
+<dt>group_concat(X)<br>group_concat(X,Y)<br>string_agg(X,Y)</dt>
+<dd>The group_concat() function returns a string which is the concatenation of all non-NULL values of X. If parameter Y is present then it is used as the separator between instances of X. A comma (",") is used as the separator if Y is omitted.
+<br><br>The string_agg(X,Y) function is an alias for group_concat(X,Y). String_agg() is compatible with PostgreSQL and SQL-Server and group_concat() is compatible with MySQL.
+<br><br>The order of the concatenated elements is arbitrary unless an ORDER BY argument is included immediately after the last parameter.</dd>
+
+<dt>max(X)</dt>
+<dd>The max() aggregate function returns the maximum value of all values in the group. The maximum value is the value that would be returned last in an ORDER BY on the same column. Aggregate max() returns NULL if and only if there are no non-NULL values in the group.</dd>
+
+<dt>median(X)</dt>
+<dd>The median() function returns the median value of all non-NULL X within a group. The median(X) function is equivalent to percentile_cont(X,0.5). See separate documentation on the percentile extension for additional information.
+<br><br>The median() function is available since SQLite version 3.51.0 (2025-11-04) if the amalgamation is compiled using -DSQLITE_ENABLE_PERCENTILE, or as a loadable extension in prior versions of SQLite.</dd>
+
+<dt>min(X)</dt>
+<dd>The min() aggregate function returns the minimum non-NULL value of all values in the group. The minimum value is the first non-NULL value that would appear in an ORDER BY of the column. Aggregate min() returns NULL if and only if there are no non-NULL values in the group.</dd>
+
+<dt>percentile(Y,P)</dt>
+<dd>The percentile(Y,P) aggregate function computes an answer X which is a value that is greater than or equal to P percent of the non-NULL inputs and which is less than or equal to 100-P percent of the inputs. The parameter P must be a number between 0.0 and 100.0. The value of P must be the same for all terms of the aggregate and may not be NULL. Y inputs must be either NULL or numeric. NULL values for Y are ignored. Any non-NULL Y input that is not numeric causes an error to be raised.
+<br><br>The percentile(Y,P) function is equivalent to percentile_cont(Y,p/100.0). See separate documentation on the percentile extension for additional information.
+<br><br>The percentile() function is available since SQLite version 3.51.0 (2025-11-04) if the amalgamation is compiled using -DSQLITE_ENABLE_PERCENTILE, or as a loadable extension in prior versions of SQLite.</dd>
+
+<dt>percentile_cont(Y,P)</dt>
+<dd>The percentile(Y,P) aggregate function computes an answer X which is a value that is greater than or equal to fraction P of the non-NULL inputs and which is less than or equal to fraction 1.0-P of the inputs. The parameter P must be a number between 0.0 and 1.0. The value of P must be the same for all terms of the aggregate and may not be NULL. Y inputs must be either NULL or numeric. NULL values for Y are ignored. Any non-NULL Y input that is not numeric causes an error to be raised. The percentile_cont(Y,P) function works like percentile(Y,P) except that the P value spans the range of 0.0 to 1.0 instead of 0.0 to 100.0. Thus the result of percentile_cont(Y,P) is the same as percentile(Y,P*100). See separate documentation on the percentile extension for additional information.
+<br><br>The percentile_cont() function is available since SQLite version 3.51.0 (2025-11-04) if the amalgamation is compiled using -DSQLITE_ENABLE_PERCENTILE, or as a loadable extension in prior versions of SQLite.</dd>
+
+<dt>percentile_disc(Y,P)</dt>
+<dd>The percentile_disc(Y,P) function works like percentile_cont(Y,P) except that instead of doing a weighted average of the closest available inputs, it always returns a value that is one of the input values - the smaller of the two possible choices. See separate documentation on the percentile extension for additional information.
+<br><br>The percentile_disc() function is available since SQLite version 3.51.0 (2025-11-04) if the amalgamation is compiled using -DSQLITE_ENABLE_PERCENTILE, or as a loadable extension in prior versions of SQLite.</dd>
+
+<dt>sum(X)<br>total(X)</dt>
+<dd>The sum() and total() aggregate functions return the sum of all non-NULL values in the group. If there are no non-NULL input rows then sum() returns NULL but total() returns 0.0. NULL is not normally a helpful result for the sum of no rows but the SQL standard requires it and most other SQL database engines implement sum() that way so SQLite does it in the same way in order to be compatible. The non-standard total() function is provided as a convenient way to work around this design problem in the SQL language.
+<br><br>The result of total() is always a floating point value. The result of sum() is an integer value if all non-NULL inputs are integers. If any input to sum() is neither an integer nor a NULL, then sum() returns a floating point value which is an approximation of the mathematical sum.
+<br><br>Sum() will throw an "integer overflow" exception if all inputs are integers or NULL and an integer overflow occurs at any point during the computation. No overflow error is ever raised if any prior input was a floating point value. Total() never throws an integer overflow.
+<br><br>When summing floating-point values, if the magnitudes of the values differ wildly then the resulting sum might be imprecise due to the fact that IEEE 754 floating point values are approximations. Use the decimal_sum(X) aggregate in the decimal extension to obtain an exact summation of floating point numbers.</dd>
+</dl>
+
+</div>
+</details>
+
+<details id="alter-table">
+<summary>ALTER TABLE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">ALTER TABLE [schema.]table
+  { RENAME TO new-table
+  | RENAME [COLUMN] old-col TO new-col
+  | ADD [COLUMN] column-def
+  | DROP [COLUMN] column }</pre>
+
+
+<p>SQLite supports a limited subset of ALTER TABLE. The ALTER TABLE command in SQLite allows the user to rename a table, to rename a column within a table, to add a new column to an existing table, or to drop a column from a table.</p>
+<h4>ALTER TABLE RENAME</h4>
+<p>The RENAME TO syntax changes the name of the table to <i>new-table-name</i>. This command cannot be used to move a table between attached databases, only to rename a table within the same database. If the table being renamed has triggers or indices, then these remain attached to the table after it has been renamed.</p>
+<h4>ALTER TABLE RENAME COLUMN</h4>
+<p>The RENAME COLUMN TO syntax changes the <i>column-name</i> of table <i>table-name</i> into <i>new-column-name</i>. The column name is changed both within the table definition itself and also within all indexes, triggers and views that reference the column.</p>
+<h4>ALTER TABLE ADD COLUMN</h4>
+<p>The ADD COLUMN syntax is used to add a new column to an existing table. The new column is always appended to the end of the list of existing columns. The column-def rule defines the characteristics of the new column. New columns may not have a PRIMARY KEY or UNIQUE constraint, may not have a default value of CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP, or an expression in parentheses, and if NOT NULL is specified then a non-NULL default value must also be supplied.</p>
+<h4>ALTER TABLE DROP COLUMN</h4>
+<p>The DROP COLUMN syntax is used to remove an existing column from a table. The DROP COLUMN command removes the named column from the table, and rewrites its content to purge the data associated with that column. The DROP COLUMN command only works if the column is not referenced by any other parts of the schema and is not a PRIMARY KEY and does not have a UNIQUE constraint.</p>
+
+</div>
+</details>
+
+<details id="analyze">
+<summary>ANALYZE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">ANALYZE
+ANALYZE schema
+ANALYZE [schema.]table-or-index</pre>
+
+
+<p>The ANALYZE command gathers statistics about tables and indices and stores the collected information in internal tables of the database where the query optimizer can access the information and use it to help make better query planning choices. If no arguments are given, all attached databases are analyzed. A single schema name or table or index name may be given as the argument to limit the analysis to just that one object.</p>
+<p>The recommended approach is to run ANALYZE once after a database has been populated with representative data, then to periodically re-run ANALYZE, or to run it after making significant changes to the content. The statistics gathered by ANALYZE are not automatically updated as the content of the database changes.</p>
+
+</div>
+</details>
+
+<details id="attach">
+<summary>ATTACH DATABASE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">ATTACH [DATABASE] expr AS schema-name</pre>
+
+
+<p>The ATTACH DATABASE statement adds another database file to the current database connection. Database files that were previously attached can be removed using the DETACH DATABASE command.</p>
+<p>The filename for the database to be attached is the value of the expression that occurs before the AS keyword. The schema-name is the name under which the tables of the attached database appear. Tables in an attached database can then be referred to using the syntax <i>schema-name.table-name</i>. If the schema-name is the same as the name of an existing attached database, an error results. The database names 'main' and 'temp' refer to the main database and the database used for temporary tables and are reserved.</p>
+<p>If EXCLUSIVE or other special behavior is needed, the URI filename may be used. The maximum number of databases that can be attached is controlled by SQLITE_MAX_ATTACHED (default 10).</p>
+
+</div>
+</details>
+
+<details id="begin">
+<summary>BEGIN TRANSACTION</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">BEGIN [ DEFERRED | IMMEDIATE | EXCLUSIVE ] [TRANSACTION]</pre>
+
+
+<p>No changes can be made to the database except within a transaction. Any command that changes the database (basically, any SQL command other than SELECT) will automatically start a transaction if one is not already in effect. Automatically started transactions are committed when the last SQL statement finishes.</p>
+<p>Transactions can be started manually using the BEGIN command. Such transactions usually persist until the next COMMIT or ROLLBACK command, though a transaction will also ROLLBACK if the database is closed or if an error occurs and the ROLLBACK conflict resolution algorithm is specified.</p>
+
+<p>Transactions can be DEFERRED, IMMEDIATE, or EXCLUSIVE. The default transaction behavior is DEFERRED. DEFERRED means that the transaction does not actually start until the database is first accessed. IMMEDIATE causes the database connection to start a new write immediately, without waiting for a write statement. EXCLUSIVE is similar to IMMEDIATE in that a write transaction is started immediately.</p>
+<p>The BEGIN command only changes the state of transactions started automatically. The word "TRANSACTION" is optional after BEGIN.</p>
+
+</div>
+</details>
+
+<details id="comment">
+<summary>comment</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">-- single-line comment (to end of line)
+/* block comment,
+   may span multiple lines */</pre>
+
+
+<p>Comments are not SQL commands, but can occur within the text of SQL queries passed to sqlite3_prepare_v2() and related interfaces. Comments are treated as whitespace by the parser. Comments can begin anywhere whitespace can be found, including inside expressions that span multiple lines.</p>
+<p>SQL comments begin with two consecutive "-" characters (ASCII 0x2d) and extend up to and including the next newline character (ASCII 0x0a) or until the end of input, whichever comes first.</p>
+<p>C-style comments begin with "/*" and extend up to and including the next "*/" character pair or until the end of input, whichever comes first. C-style comments can span multiple lines.</p>
+<pre>SELECT 1;  -- a line comment
+/* a block
+   comment */
+SELECT 2;</pre>
+
+</div>
+</details>
+
+<details id="commit">
+<summary>COMMIT TRANSACTION</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">COMMIT [TRANSACTION]
+END [TRANSACTION]</pre>
+
+
+<p>No changes can be made to the database except within a transaction. Any command that changes the database (basically, any SQL command other than SELECT) will automatically start a transaction if one is not already in effect. Automatically started transactions are committed when the last SQL statement finishes.</p>
+<p>Transactions can be started manually using the BEGIN command. Such transactions usually persist until the next COMMIT or ROLLBACK command, though a transaction will also ROLLBACK if the database is closed or if an error occurs and the ROLLBACK conflict resolution algorithm is specified.</p>
+
+<p>The COMMIT command (which can also be written as END TRANSACTION) causes all changes made since the start of the transaction to be saved to the database file and ends the transaction. The COMMIT command does not actually perform a commit until all pending SQL commands finish. Thus if two or more SELECT statements are in the middle of processing and a COMMIT is executed, the commit will not actually occur until all the SELECT statements finish.</p>
+<p>The keyword TRANSACTION following COMMIT (or END) is optional.</p>
+
+</div>
+</details>
+
+<details id="core-functions">
+<summary>core functions</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">function-name( argument [, argument]... )
+-- scalar functions; e.g.  length(x)  substr(x,1,3)  coalesce(a,b)  typeof(x)</pre>
+
+
+<p>The core functions shown below are available by default. Date &amp; Time functions, aggregate functions, window functions, math functions, and JSON functions are documented separately. An application may define additional functions written in C and added to the database engine using the sqlite3_create_function() API.</p>
+<dl>
+<dt>abs(X)</dt><dd>Returns the absolute value of the numeric argument X. Returns NULL if X is NULL, and 0.0 if X is a string or blob that cannot be converted to a numeric value. If X is the integer -9223372036854775808 then abs(X) throws an integer overflow error.</dd>
+<dt>changes()</dt><dd>Returns the number of database rows that were changed or inserted or deleted by the most recently completed INSERT, DELETE, or UPDATE statement, exclusive of statements in lower-level triggers.</dd>
+<dt>char(X1,X2,...,XN)</dt><dd>Returns a string composed of characters having the unicode code point values of integers X1 through XN, respectively.</dd>
+<dt>coalesce(X,Y,...)</dt><dd>Returns a copy of its first non-NULL argument, or NULL if all arguments are NULL. Coalesce() must have at least 2 arguments.</dd>
+<dt>concat(X,...)</dt><dd>Returns a string which is the concatenation of the string representation of all of its non-NULL arguments. If all arguments are NULL, then concat() returns an empty string.</dd>
+<dt>concat_ws(SEP,X,...)</dt><dd>Returns a string that is the concatenation of all non-null arguments beyond the first argument, using the text value of the first argument as a separator. Returns NULL if the first (separator) argument is NULL.</dd>
+<dt>format(FORMAT,...)</dt><dd>Works like the sqlite3_mprintf() C-language function and the printf() function from the standard C library. The first argument is a format string that specifies how to construct the output string using values taken from subsequent arguments. (printf() is an alias.)</dd>
+<dt>glob(X,Y)</dt><dd>Equivalent to the expression "Y GLOB X". Note that the X and Y arguments are reversed in the glob() function relative to the infix GLOB operator.</dd>
+<dt>hex(X)</dt><dd>Interprets its argument as a BLOB and returns a string which is the upper-case hexadecimal rendering of the content of that blob.</dd>
+<dt>ifnull(X,Y)</dt><dd>Returns a copy of its first non-NULL argument, or NULL if both arguments are NULL. Behaves the same as coalesce() with two arguments.</dd>
+<dt>iif(X,Y,Z)</dt><dd>Returns the value Y if X is true, and Z otherwise. Equivalent to CASE WHEN X THEN Y ELSE Z END.</dd>
+<dt>instr(X,Y)</dt><dd>Finds the first occurrence of string Y within string X and returns the number of prior characters plus 1, or 0 if Y is nowhere found within X. Can also operate on BLOBs.</dd>
+<dt>last_insert_rowid()</dt><dd>Returns the ROWID of the last row insert from the database connection which invoked the function.</dd>
+<dt>length(X)</dt><dd>For a string value X, returns the number of characters (not bytes) in X prior to the first NUL character. For a blob, returns the number of bytes. For numeric values, returns the length of a string representation.</dd>
+<dt>like(X,Y) / like(X,Y,Z)</dt><dd>Used to implement the "Y LIKE X [ESCAPE Z]" expression. If the optional ESCAPE clause is present, then the like() function is invoked with three arguments.</dd>
+<dt>likelihood(X,Y) / likely(X) / unlikely(X)</dt><dd>No-op functions that return their first argument, used as hints to the query planner about the probability that a condition is true.</dd>
+<dt>load_extension(X) / load_extension(X,Y)</dt><dd>Loads SQLite extensions from the shared library file named X using the entry point Y. Extension loading is turned off by default and must be enabled first.</dd>
+<dt>lower(X)</dt><dd>Returns a copy of string X with all ASCII characters converted to lower case.</dd>
+<dt>ltrim(X) / ltrim(X,Y)</dt><dd>Returns a string formed by removing any and all characters that appear in Y from the left side of X. If Y is omitted, spaces are removed.</dd>
+<dt>max(X,Y,...)</dt><dd>The multi-argument max() function returns the argument with the maximum value, or NULL if any argument is NULL. (Differs from the aggregate max().)</dd>
+<dt>min(X,Y,...)</dt><dd>The multi-argument min() function returns the argument with the minimum value. Returns NULL if any argument is NULL. (Differs from the aggregate min().)</dd>
+<dt>nullif(X,Y)</dt><dd>Returns its first argument if the arguments are different and NULL if they are the same.</dd>
+<dt>octet_length(X)</dt><dd>Returns the number of bytes in the encoding of text string X.</dd>
+<dt>printf(FORMAT,...)</dt><dd>An alias for format(). Retained for backwards compatibility.</dd>
+<dt>quote(X)</dt><dd>Returns the text of an SQL literal which is the value of its argument suitable for inclusion into an SQL statement. Strings are surrounded by single-quotes with internal quotes escaped; BLOBs are encoded as hexadecimal literals.</dd>
+<dt>random()</dt><dd>Returns a pseudo-random integer between -9223372036854775808 and +9223372036854775807.</dd>
+<dt>randomblob(N)</dt><dd>Returns an N-byte blob containing pseudo-random bytes. If N is less than 1 then a 1-byte random blob is returned.</dd>
+<dt>replace(X,Y,Z)</dt><dd>Returns a string formed by substituting string Z for every occurrence of string Y in string X.</dd>
+<dt>round(X) / round(X,Y)</dt><dd>Returns a floating-point value X rounded to Y digits to the right of the decimal point. If Y is omitted or negative, it is taken to be 0.</dd>
+<dt>rtrim(X) / rtrim(X,Y)</dt><dd>Returns a string formed by removing any and all characters that appear in Y from the right side of X. If Y is omitted, spaces are removed.</dd>
+<dt>sign(X)</dt><dd>Returns -1, 0, or +1 if the argument X is a numeric value that is negative, zero, or positive, respectively. Returns NULL if X is not a number.</dd>
+<dt>soundex(X)</dt><dd>Computes the soundex encoding of the string X. This function is available only if SQLite is compiled with the SQLITE_SOUNDEX option.</dd>
+<dt>substr(X,Y,Z) / substr(X,Y) / substring(...)</dt><dd>Returns a substring of input string X that begins with the Y-th character and which is Z characters long. If Z is omitted, all characters through the end of the string are returned. substring() is an alias.</dd>
+<dt>total_changes()</dt><dd>Returns the total number of rows inserted, modified or deleted by all INSERT, UPDATE or DELETE statements completed since the database connection was opened.</dd>
+<dt>trim(X) / trim(X,Y)</dt><dd>Returns a string formed by removing any and all characters that appear in Y from both ends of X. If Y is omitted, spaces are removed.</dd>
+<dt>typeof(X)</dt><dd>Returns a string that indicates the datatype of the expression X: "null", "integer", "real", "text", or "blob".</dd>
+<dt>unhex(X) / unhex(X,Y)</dt><dd>Returns a BLOB value which is the decoding of the hexadecimal string X. If X contains characters that are not hexadecimal digits (beyond any ignore characters in Y), returns NULL.</dd>
+<dt>unicode(X)</dt><dd>Returns the numeric unicode code point corresponding to the first character of the string X.</dd>
+<dt>upper(X)</dt><dd>Returns a copy of input string X in which all lower-case ASCII characters are converted to their upper-case equivalent.</dd>
+<dt>zeroblob(N)</dt><dd>Returns a BLOB consisting of N bytes of 0x00. Used to reserve space for a BLOB that is later written using incremental BLOB I/O.</dd>
+</dl>
+<p><i>Other introspection helpers include sqlite_version(), sqlite_source_id(), sqlite_compileoption_get(N), sqlite_compileoption_used(X), and sqlite_offset(X).</i></p>
+
+</div>
+</details>
+
+<details id="create-index">
+<summary>CREATE INDEX</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">CREATE [UNIQUE] INDEX [IF NOT EXISTS] [schema.]index-name
+  ON table-name ( indexed-column [, indexed-column]... )
+  [ WHERE expr ]
+
+indexed-column:
+  { column-name | expr } [ COLLATE collation ] [ ASC | DESC ]</pre>
+
+
+<p>The CREATE INDEX command consists of the keywords "CREATE INDEX" followed by the name of the new index, the keyword "ON", the name of a previously created table that is to be indexed, and a parenthesized list of table column names and/or expressions that are used for the index key.</p>
+<p>If the optional WHERE clause is included, then the index is a "partial index". The expression in the WHERE clause may only refer to columns of the table being indexed.</p>
+<p>If the UNIQUE keyword appears between CREATE and INDEX then duplicate index entries are not allowed. Any attempt to insert a duplicate entry will result in an error. For the purposes of unique indices, all NULL values are considered different from all other NULL values and are thus unique.</p>
+<p>The COLLATE clause following each column name defines a collating sequence used for text entries in that column. The default collating sequence is the collating sequence defined for that column in the CREATE TABLE statement, or BINARY if none is specified.</p>
+
+</div>
+</details>
+
+<details id="create-table">
+<summary>CREATE TABLE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">CREATE [TEMP|TEMPORARY] TABLE [IF NOT EXISTS] [schema.]table-name
+  ( column-def [, column-def]... [, table-constraint]... )
+  [ WITHOUT ROWID | STRICT ]
+CREATE [TEMP|TEMPORARY] TABLE [IF NOT EXISTS] [schema.]table-name AS select-stmt
+
+column-def:
+  column-name [type-name] [column-constraint]...
+
+column-constraint:
+  [CONSTRAINT name]
+  { PRIMARY KEY [ASC|DESC] [conflict] [AUTOINCREMENT]
+  | NOT NULL [conflict] | UNIQUE [conflict]
+  | CHECK ( expr ) | DEFAULT value
+  | COLLATE collation | REFERENCES table [(col...)] [fk-action]
+  | [GENERATED ALWAYS] AS ( expr ) [STORED|VIRTUAL] }</pre>
+
+
+<p>The "CREATE TABLE" command is used to create a new table in an SQLite database. A CREATE TABLE command specifies the following attributes of the new table: the name of the new table; the database in which the new table is created; the name of each column; the declared type of each column; a default value or expression for each column; a collating sequence for each column; optionally, a PRIMARY KEY for the table; a set of SQL constraints for the table; and optionally a ROWID.</p>
+<h4>Column definitions and constraints</h4>
+<p>Each column definition may be followed by one or more column constraints: PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, COLLATE, REFERENCES (a foreign key), GENERATED ALWAYS AS (a generated/computed column), and an optional AS clause with STORED or VIRTUAL storage.</p>
+<h4>The rowid and INTEGER PRIMARY KEY</h4>
+<p>Except for WITHOUT ROWID tables, all rows within SQLite tables have a 64-bit signed integer key that uniquely identifies the row within its table. This is the "rowid". A column that is declared "INTEGER PRIMARY KEY" becomes an alias for the rowid.</p>
+<h4>WITHOUT ROWID and STRICT</h4>
+<p>An ordinary SQLite table has an implicit rowid. The WITHOUT ROWID option causes the table to be stored as a B-tree keyed by the PRIMARY KEY instead, which can be more compact and efficient for some workloads. A WITHOUT ROWID table must have a PRIMARY KEY. Adding the STRICT keyword to the end of a CREATE TABLE statement causes SQLite to enforce the declared type of each column strictly.</p>
+<h4>CREATE TABLE ... AS SELECT</h4>
+<p>A table may also be created as the result of a query. The columns of the new table take the names and declared types of the columns of the result set of the SELECT.</p>
+
+</div>
+</details>
+
+<details id="create-trigger">
+<summary>CREATE TRIGGER</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">CREATE [TEMP|TEMPORARY] TRIGGER [IF NOT EXISTS] [schema.]trigger-name
+  [ BEFORE | AFTER | INSTEAD OF ]
+  { DELETE | INSERT | UPDATE [OF column [, column]...] }
+  ON table-name
+  [ FOR EACH ROW ] [ WHEN expr ]
+BEGIN
+  { update-stmt | insert-stmt | delete-stmt | select-stmt } ;
+  ...
+END</pre>
+
+
+<p>The CREATE TRIGGER statement is used to add triggers to the database schema. Triggers are database operations that are automatically performed when a specified database event occurs.</p>
+<p>A trigger may be specified to fire whenever a DELETE, INSERT, or UPDATE of a particular database table occurs, or whenever an UPDATE occurs on one or more specified columns of a table. Triggers are said to be either BEFORE, AFTER, or INSTEAD OF the associated database event. INSTEAD OF triggers may only be created on views.</p>
+<p>Both the WHEN clause and the trigger actions may access elements of the row being inserted, deleted or updated using references of the form "NEW.column-name" and "OLD.column-name", where column-name is the name of a column from the table that the trigger is associated with. OLD and NEW references may only be used in triggers on events for which they are relevant: for INSERT, only NEW is valid; for UPDATE, both; for DELETE, only OLD.</p>
+<p>If a WHEN clause is supplied, the SQL statements specified are only executed for rows for which the WHEN clause is true. If no WHEN clause is supplied, the SQL statements are executed for all rows.</p>
+
+</div>
+</details>
+
+<details id="create-view">
+<summary>CREATE VIEW</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">CREATE [TEMP|TEMPORARY] VIEW [IF NOT EXISTS] [schema.]view-name
+  [ ( column-name [, column-name]... ) ]
+  AS select-stmt</pre>
+
+
+<p>The CREATE VIEW command assigns a name to a pre-packaged SELECT statement. Once the view is created, it can be used in the FROM clause of another SELECT in place of a table name.</p>
+<p>If a schema-name is specified, then the view is created in the named database. Views in the "temp" database are only visible to the database connection that created them and are automatically deleted when the database connection is closed.</p>
+<p>You cannot DELETE, INSERT, or UPDATE a view directly. Views are read-only in SQLite. However, in many cases you can use an INSTEAD OF trigger on the view to accomplish the same thing. Views are removed with the DROP VIEW command.</p>
+
+</div>
+</details>
+
+<details id="create-vtab">
+<summary>CREATE VIRTUAL TABLE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">CREATE VIRTUAL TABLE [IF NOT EXISTS] [schema.]table-name
+  USING module-name [ ( module-argument [, module-argument]... ) ]</pre>
+
+
+<p>A virtual table is an object that is registered with an open SQLite database connection. From the perspective of an SQL statement, the virtual table object looks like any other table or view. But behind the scenes, queries and updates on a virtual table invoke callback methods of the virtual table object instead of reading and writing on the database file.</p>
+<p>The virtual table mechanism allows an application to publish interfaces that are accessible from SQL statements as if they were tables. SQL statements can do almost anything to a virtual table that they can do to a real table, with the following exceptions: a virtual table cannot be the subject of a CREATE TRIGGER, and one cannot run CREATE INDEX or ALTER TABLE ... ADD COLUMN commands against a virtual table.</p>
+<p>The CREATE VIRTUAL TABLE statement names the virtual table and specifies the name of its module (the implementation) via the USING clause. Built-in modules include FTS5 (full-text search), R*Tree (spatial indexes), and the CSV and dbstat modules.</p>
+
+</div>
+</details>
+
+<details id="datetime-functions">
+<summary>date and time functions</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">date(time-value [, modifier]...)
+time(time-value [, modifier]...)
+datetime(time-value [, modifier]...)
+julianday(time-value [, modifier]...)
+unixepoch(time-value [, modifier]...)
+strftime(format, time-value [, modifier]...)
+timediff(A, B)</pre>
+
+
+<p>SQLite supports the following date and time functions. These functions take a time value, optionally followed by zero or more modifiers, and return a formatted result.</p>
+<dl>
+<dt>date(time-value, modifier, modifier, ...)</dt><dd>Returns the date as text in the format YYYY-MM-DD.</dd>
+<dt>time(time-value, modifier, ...)</dt><dd>Returns the time as text in the format HH:MM:SS.</dd>
+<dt>datetime(time-value, modifier, ...)</dt><dd>Returns the date and time as text in the format YYYY-MM-DD HH:MM:SS.</dd>
+<dt>julianday(time-value, modifier, ...)</dt><dd>Returns the Julian day - the fractional number of days since noon in Greenwich on November 24, 4714 B.C.</dd>
+<dt>unixepoch(time-value, modifier, ...)</dt><dd>Returns a unix timestamp - the number of seconds since 1970-01-01 00:00:00 UTC.</dd>
+<dt>strftime(format, time-value, modifier, ...)</dt><dd>Returns the date formatted according to the format string specified as the first argument, using substitutions such as %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %j (day of year), %w (day of week), %W (week of year), %s (unix timestamp), and %f (fractional seconds).</dd>
+<dt>timediff(time-value, time-value)</dt><dd>Returns a string that describes the amount of time that must be added to the second value in order to reach the first, formatted as (+|-)YYYY-MM-DD HH:MM:SS.SSS.</dd>
+</dl>
+<h4>Time values</h4>
+<p>A time value can be in any of several formats: an ISO-8601 date and/or time string; the literal string 'now' (the current date and time); a number interpreted as a Julian day number; or a number followed by the 'unixepoch' or 'auto' modifier interpreted as a unix timestamp.</p>
+<h4>Modifiers</h4>
+<p>The time value can be followed by zero or more modifiers that alter the date and/or time. Examples of modifiers include: 'NNN days', 'NNN hours', 'NNN minutes', 'NNN months', 'NNN years' (add the specified amount of time); 'start of month', 'start of year', 'start of day' (shift backwards to the beginning of the relevant period); 'weekday N' (advance to the next date where the weekday number is N, with Sunday being 0); 'unixepoch', 'julianday', 'auto', 'localtime', and 'utc'.</p>
+<pre>SELECT date('now');
+SELECT datetime('now','localtime');
+SELECT date('now','start of month','+1 month','-1 day');   -- last day of this month
+SELECT strftime('%Y-%m-%d %H:%M','now');</pre>
+
+</div>
+</details>
+
+<details id="delete">
+<summary>DELETE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">[ WITH [RECURSIVE] cte [, cte]... ]
+DELETE FROM [schema.]table [ [AS] alias ] [ INDEXED BY index | NOT INDEXED ]
+  [ WHERE expr ]
+  [ RETURNING result-column [, result-column]... ]
+  [ ORDER BY term ...  LIMIT expr [ OFFSET expr ] ]</pre>
+
+
+<p>The DELETE command removes records from the table identified by the qualified-table-name.</p>
+<p>If the WHERE clause is not present, all records in the table are deleted. If a WHERE clause is supplied, then only those rows for which the WHERE clause boolean expression is true are deleted. Rows for which the expression is false or NULL are retained.</p>
+<p>The optional RETURNING clause causes the DELETE command to return the deleted rows (or expressions computed from them) to the application.</p>
+<p><b>Restrictions:</b> In a simple DELETE without a WHERE clause and without triggers, SQLite uses an optimization called "truncate" to delete all rows quickly. The ORDER BY and LIMIT clauses on DELETE are only available if SQLite is compiled with the SQLITE_ENABLE_UPDATE_DELETE_LIMIT option.</p>
+
+</div>
+</details>
+
+<details id="detach">
+<summary>DETACH DATABASE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">DETACH [DATABASE] schema-name</pre>
+
+
+<p>This statement detaches an additional database connection previously attached using the ATTACH DATABASE statement. When not in shared cache mode, it is possible to have the same database file attached multiple times using different names, and detaching one connection to a file leaves the others intact.</p>
+<p>The "main" and "temp" databases cannot be detached. Attempting to detach a database that is currently in the middle of a transaction results in an error.</p>
+
+</div>
+</details>
+
+<details id="drop-index">
+<summary>DROP INDEX</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">DROP INDEX [IF EXISTS] [schema.]index-name</pre>
+
+
+<p>The DROP INDEX statement removes an index added with the CREATE INDEX statement. The named index is completely removed from the disk. The only way to recover the index is to reenter the appropriate CREATE INDEX command.</p>
+<p>The optional IF EXISTS clause suppresses the error that would normally result if the index does not exist.</p>
+
+</div>
+</details>
+
+<details id="drop-table">
+<summary>DROP TABLE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">DROP TABLE [IF EXISTS] [schema.]table-name</pre>
+
+
+<p>The DROP TABLE statement removes a table added with the CREATE TABLE statement. The name specified is the table name. The dropped table is completely removed from the database schema and the disk file. The table cannot be recovered. All indices and triggers associated with the table are also deleted.</p>
+<p>The optional IF EXISTS clause suppresses the error that would normally result if the table does not exist. If foreign key constraints are enabled, a DROP TABLE performs an implicit DELETE to empty the table before removing it, which may trigger foreign key actions.</p>
+
+</div>
+</details>
+
+<details id="drop-trigger">
+<summary>DROP TRIGGER</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">DROP TRIGGER [IF EXISTS] [schema.]trigger-name</pre>
+
+
+<p>The DROP TRIGGER statement removes a trigger created by the CREATE TRIGGER statement. Once removed, the trigger definition is no longer present in the database schema and will not fire again. Note that triggers are automatically dropped when the associated table is dropped.</p>
+<p>The optional IF EXISTS clause suppresses the error that would normally result if the trigger does not exist.</p>
+
+</div>
+</details>
+
+<details id="drop-view">
+<summary>DROP VIEW</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">DROP VIEW [IF EXISTS] [schema.]view-name</pre>
+
+
+<p>The DROP VIEW statement removes a view created by the CREATE VIEW statement. The view definition is removed from the database schema, but no actual data in the underlying base tables is modified.</p>
+<p>The optional IF EXISTS clause suppresses the error that would normally result if the view does not exist.</p>
+
+</div>
+</details>
+
+<details id="end">
+<summary>END TRANSACTION</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">END [TRANSACTION]
+COMMIT [TRANSACTION]</pre>
+
+
+<p>No changes can be made to the database except within a transaction. Any command that changes the database (basically, any SQL command other than SELECT) will automatically start a transaction if one is not already in effect. Automatically started transactions are committed when the last SQL statement finishes.</p>
+<p>Transactions can be started manually using the BEGIN command. Such transactions usually persist until the next COMMIT or ROLLBACK command, though a transaction will also ROLLBACK if the database is closed or if an error occurs and the ROLLBACK conflict resolution algorithm is specified.</p>
+
+<p>The END TRANSACTION command is an alias for COMMIT. It causes all changes made since the start of the transaction to be saved to the database file and ends the transaction. The keyword TRANSACTION following END is optional.</p>
+
+</div>
+</details>
+
+<details id="explain">
+<summary>EXPLAIN</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">EXPLAIN sql-statement
+EXPLAIN QUERY PLAN sql-statement</pre>
+
+
+<p>An SQL statement can be preceded by the keyword "EXPLAIN" or by the phrase "EXPLAIN QUERY PLAN". Either modification causes the SQL statement to behave as a query and to return information about how the SQL statement would have operated if the EXPLAIN keyword or phrase had been omitted.</p>
+<p>When the EXPLAIN keyword appears by itself it causes the statement to behave as a query that returns the sequence of virtual machine instructions (bytecode) it would have used to execute the command. This is chiefly useful for low-level debugging of the bytecode engine.</p>
+<p>When the phrase EXPLAIN QUERY PLAN appears, the statement returns high-level information about the query strategy: which tables are scanned, in what order, and which indexes (if any) are used. This is the practical form used to diagnose why a query is slow. The output is intended for interactive analysis and its exact format may change from one SQLite release to the next.</p>
+
+</div>
+</details>
+
+<details id="expression">
+<summary>expression</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">expr:
+    literal-value | bind-parameter | [schema.][table.]column
+  | unary-op expr | expr binary-op expr
+  | function-name( [DISTINCT] expr [, ...] ) [ FILTER (...) ] [ OVER ... ]
+  | ( expr [, ...] )
+  | CAST ( expr AS type )
+  | expr COLLATE collation
+  | expr [NOT] { LIKE | GLOB | REGEXP | MATCH } expr [ ESCAPE expr ]
+  | expr [NOT] BETWEEN expr AND expr
+  | expr [NOT] IN ( { select | expr-list } )
+  | [NOT] EXISTS ( select )
+  | CASE [expr] WHEN expr THEN expr ... [ELSE expr] END
+  | RAISE ( { IGNORE | ROLLBACK|ABORT|FAIL, error-message } )</pre>
+
+
+<p>This section documents the syntax of SQL expressions in SQLite.</p>
+<h4>Operators, and Parse-Affecting Attributes</h4>
+<p>SQLite understands the following binary operators, in order from highest to lowest precedence: the concatenation and JSON extraction operators (|| -&gt; -&gt;&gt;); multiplication, division and modulo (* / %); addition and subtraction (+ -); the bit operators (&amp; | &lt;&lt; &gt;&gt;); the ESCAPE modifier; comparison operators (&lt; &gt; &lt;= &gt;=); equality and matching operators (= == &lt;&gt; != IS, IS NOT, IS DISTINCT FROM, IS NOT DISTINCT FROM, IN, LIKE, GLOB, MATCH, REGEXP); and finally the logical operators AND and OR.</p>
+<h4>Literal values</h4>
+<p>A literal value represents a constant. Literal values may be integers, floating point numbers, strings (in single quotes), BLOBs (using the x'...' hexadecimal notation), NULL, TRUE, FALSE, and the special keywords CURRENT_TIME, CURRENT_DATE and CURRENT_TIMESTAMP.</p>
+<h4>Parameters</h4>
+<p>A parameter specifies a placeholder in the expression for a value that is filled in at runtime using one of the sqlite3_bind() family of C/C++ interfaces. Parameters can take several forms: ?, ?NNN, :name, @name, and $name.</p>
+<h4>The BETWEEN, CASE, CAST, IN, LIKE/GLOB/REGEXP/MATCH, and EXISTS expressions</h4>
+<p>SQLite supports the BETWEEN...AND range test; the CASE expression for inline conditional logic; the CAST(expr AS type) expression for explicit type conversions; the IN and NOT IN operators for testing membership in a list or subquery; the LIKE, GLOB, REGEXP and MATCH string-matching operators; and the EXISTS and NOT EXISTS operators for testing whether a subquery returns any rows.</p>
+<h4>NULL handling</h4>
+<p>The values NULL, 0, and empty strings are all considered to be false when used as the argument to a WHERE clause or as the condition to a CASE, and any other value is considered true. Most operators evaluate to NULL when any operand is NULL; the exceptions are IS, IS NOT, and the boolean operators AND and OR in some cases.</p>
+
+</div>
+</details>
+
+<details id="indexed-by">
+<summary>INDEXED BY</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">qualified-table-name:
+  [schema.]table [ [AS] alias ]
+    [ INDEXED BY index-name | NOT INDEXED ]</pre>
+
+
+<p>The INDEXED BY phrase forces the SQLite query planner to use a particular named index on a DELETE, SELECT, or UPDATE statement. Its intended use is to help detect undesirable query plan changes during regression testing, not to be a general-purpose performance tuning tool.</p>
+<p>The "INDEXED BY index-name" phrase specifies that the named index must be used in order to look up values on the preceding table. If the index named is not found, or cannot be used for the query, then the preparation of the SQL statement fails.</p>
+<p>The "NOT INDEXED" clause specifies that no index shall be used when accessing the preceding table, including any implied indexes that would otherwise be used to satisfy an ORDER BY or GROUP BY clause. The rowid can still be used to look up entries even when NOT INDEXED is specified.</p>
+
+</div>
+</details>
+
+<details id="insert">
+<summary>INSERT</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">[ WITH [RECURSIVE] cte [, cte]... ]
+{ INSERT | INSERT OR conflict | REPLACE } INTO [schema.]table [ [AS] alias ]
+  [ ( column [, column]... ) ]
+  { VALUES ( expr [, expr]... ) [, ( ... )]...
+  | select-stmt
+  | DEFAULT VALUES }
+  [ upsert-clause ]
+  [ RETURNING result-column [, result-column]... ]
+
+conflict:  ROLLBACK | ABORT | FAIL | IGNORE | REPLACE</pre>
+
+
+<p>The INSERT statement comes in three basic forms.</p>
+<p>The first form (with the "VALUES" keyword) creates one or more new rows in an existing table. If the column-name list after "table-name" is omitted, then the number of values inserted into each row must be the same as the number of columns in the table. If a column-name list is specified, then the number of values in each term of the VALUE list must match the number of specified columns. Each of the named columns of the new row is populated with the results of evaluating the corresponding VALUES expression. Table columns that do not appear in the column list are populated with the default column value, or with NULL if no default value is specified.</p>
+<p>The second form of the INSERT statement contains a SELECT statement instead of a VALUES clause. A new entry is inserted into the table for each row of data returned by executing the SELECT statement.</p>
+<p>The third form of an INSERT statement is with DEFAULT VALUES. The INSERT ... DEFAULT VALUES statement inserts a single new row into the named table. Each column of the new row is populated with its default value, or with a NULL if no default value is specified.</p>
+<p>The optional "OR conflict-clause" (for example INSERT OR REPLACE, INSERT OR IGNORE) allows a specific non-standard conflict resolution algorithm to be used during this one INSERT command. An INSERT may also be followed by an ON CONFLICT clause (an UPSERT) and/or a RETURNING clause.</p>
+
+</div>
+</details>
+
+<details id="json-functions">
+<summary>JSON functions</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">json( json )                     json_extract( json, path [, path]... )
+json_array( value, ... )        json_object( label, value, ... )
+json_insert / json_replace / json_set( json, path, value, ... )
+json_type( json [, path] )      json_valid( json )
+json_group_array( expr )        json_group_object( label, value )
+value -&gt; path        value -&gt;&gt; path</pre>
+
+
+<p>SQLite has built-in support for working with JSON stored as ordinary text. There are scalar functions, aggregate functions, and table-valued functions.</p>
+<h4>Scalar JSON functions</h4>
+<dl>
+<dt>json(json)</dt><dd>Converts the argument into a minified, well-formed JSON string. Throws an error if the argument is not well-formed.</dd>
+<dt>jsonb(json)</dt><dd>Converts the argument into the binary JSONB representation.</dd>
+<dt>json_array(value1, value2, ...)</dt><dd>Returns a well-formed JSON array composed of the arguments.</dd>
+<dt>json_array_length(json) / json_array_length(json, path)</dt><dd>Returns the number of elements in the JSON array, optionally at the given path.</dd>
+<dt>json_error_position(json)</dt><dd>Returns 0 if the argument is well-formed JSON, or the 1-based character position of the first error otherwise.</dd>
+<dt>json_extract(json, path, ...)</dt><dd>Extracts and returns one or more values from well-formed JSON at the specified paths.</dd>
+<dt>json -&gt; path / json -&gt;&gt; path</dt><dd>The -&gt; operator returns a JSON representation; the -&gt;&gt; operator returns an SQL text/numeric value. Both are shorthand for json_extract.</dd>
+<dt>json_insert / json_replace / json_set(json, path, value, ...)</dt><dd>Return a new JSON value with the given inserts, replacements, or sets applied. insert only adds new values, replace only overwrites existing ones, set does both.</dd>
+<dt>json_object(label1, value1, ...)</dt><dd>Returns a well-formed JSON object composed of the label/value argument pairs.</dd>
+<dt>json_patch(target, patch)</dt><dd>Applies an RFC-7386 MergePatch against target and returns the result.</dd>
+<dt>json_remove(json, path, ...)</dt><dd>Returns a copy of the input with the elements at the given paths removed.</dd>
+<dt>json_type(json) / json_type(json, path)</dt><dd>Returns the "type" of the outermost element (or the element at path): "object", "array", "integer", "real", "true", "false", "text", or "null".</dd>
+<dt>json_valid(json)</dt><dd>Returns 1 if the argument is well-formed JSON, or 0 otherwise.</dd>
+<dt>json_quote(value)</dt><dd>Converts an SQL value into its corresponding JSON representation.</dd>
+</dl>
+<h4>Aggregate JSON functions</h4>
+<dl>
+<dt>json_group_array(value)</dt><dd>Returns a JSON array aggregation of the values in the group.</dd>
+<dt>json_group_object(label, value)</dt><dd>Returns a JSON object aggregation of the label/value pairs in the group.</dd>
+</dl>
+<h4>Table-valued JSON functions</h4>
+<dl>
+<dt>json_each(json) / json_each(json, path)</dt><dd>Walks the immediate children of a JSON value and returns one row for each, so it can be joined against.</dd>
+<dt>json_tree(json) / json_tree(json, path)</dt><dd>Recursively walks every element of a JSON value and returns one row per element.</dd>
+</dl>
+<pre>SELECT data -&gt;&gt; '$.name' AS name FROM profile;
+SELECT value FROM json_each('[1,2,3]');</pre>
+
+</div>
+</details>
+
+<details id="keywords">
+<summary>keywords</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">-- To use a keyword as an identifier, quote it:
+  &quot;keyword&quot;      [keyword]      `keyword`      &#x27;keyword&#x27;
+-- (double-quotes / square-brackets / back-ticks quote identifiers)</pre>
+
+
+<p>The SQL standard specifies a large number of keywords which may not be used as the names of tables, indices, columns, databases, user-defined functions, collations, virtual table modules, or any other named object. The list of keywords is so long that few people can remember them all. For most SQL code, your safest bet is to never use any English language word as the name of a user-defined object.</p>
+<p>If you want to use a keyword as a name, you need to quote it. There are four ways of quoting keywords in SQLite: 'keyword' (a keyword in single quotes is a string literal); "keyword" (a keyword in double quotes is an identifier); [keyword] (a keyword enclosed in square brackets is an identifier - this is not standard SQL, it is included for compatibility); and `keyword` (a keyword enclosed in grave accents / backticks is an identifier - this is not standard SQL, it is included for MySQL compatibility).</p>
+<p>Keywords are not case sensitive. The following keywords are understood by SQLite, though many are only used within specific contexts (a partial list): ABORT, ACTION, ADD, AFTER, ALL, ALTER, ALWAYS, ANALYZE, AND, AS, ASC, ATTACH, AUTOINCREMENT, BEFORE, BEGIN, BETWEEN, BY, CASCADE, CASE, CAST, CHECK, COLLATE, COLUMN, COMMIT, CONFLICT, CONSTRAINT, CREATE, CROSS, CURRENT, DEFAULT, DEFERRABLE, DELETE, DESC, DETACH, DISTINCT, DROP, EACH, ELSE, END, ESCAPE, EXCEPT, EXCLUSIVE, EXISTS, EXPLAIN, FILTER, FOREIGN, FROM, FULL, GENERATED, GLOB, GROUP, GROUPS, HAVING, IF, IGNORE, IMMEDIATE, IN, INDEX, INDEXED, INNER, INSERT, INTERSECT, INTO, IS, JOIN, KEY, LEFT, LIKE, LIMIT, MATCH, NATURAL, NOT, NULL, OF, OFFSET, ON, OR, ORDER, OUTER, OVER, PARTITION, PLAN, PRAGMA, PRIMARY, RANGE, RECURSIVE, REFERENCES, REINDEX, RELEASE, RENAME, REPLACE, RETURNING, RIGHT, ROLLBACK, ROW, ROWS, SAVEPOINT, SELECT, SET, TABLE, TEMP, THEN, TO, TRANSACTION, TRIGGER, UNION, UNIQUE, UPDATE, USING, VACUUM, VALUES, VIEW, VIRTUAL, WHEN, WHERE, WINDOW, WITH, WITHOUT.</p>
+
+</div>
+</details>
+
+<details id="math-functions">
+<summary>math functions</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">function-name( argument [, argument]... )
+-- e.g.  abs(x)  round(x, n)  ceil(x)  floor(x)
+--       pow(x,y)  sqrt(x)  ln(x)  log(b,x)  sin/cos/tan(x)  pi()</pre>
+
+
+<p>This page documents SQL scalar functions that support mathematical computations. These functions are only available if the SQLite library is compiled using the -DSQLITE_ENABLE_MATH_FUNCTIONS compile-time option. These functions are enabled by default when building using autoconf or the CLI, but some other build configurations may omit them.</p>
+<dl>
+<dt>acos(X) acosh(X)</dt><dd>Arc cosine and hyperbolic arc cosine of X.</dd>
+<dt>asin(X) asinh(X)</dt><dd>Arc sine and hyperbolic arc sine of X.</dd>
+<dt>atan(X) atanh(X)</dt><dd>Arc tangent and hyperbolic arc tangent of X.</dd>
+<dt>atan2(Y,X)</dt><dd>Arc tangent of Y/X with the result in the correct quadrant.</dd>
+<dt>ceil(X) / ceiling(X)</dt><dd>The first representable integer value greater than or equal to X.</dd>
+<dt>cos(X) cosh(X)</dt><dd>Cosine and hyperbolic cosine of X (X in radians).</dd>
+<dt>degrees(X)</dt><dd>Converts radians into degrees.</dd>
+<dt>exp(X)</dt><dd>Computes e (Euler's number) raised to the power X.</dd>
+<dt>floor(X)</dt><dd>The first representable integer value less than or equal to X.</dd>
+<dt>ln(X)</dt><dd>Natural logarithm of X.</dd>
+<dt>log(X) / log10(X) / log(B,X) / log2(X)</dt><dd>Base-10 logarithm (one argument), base-B logarithm (two arguments), and base-2 logarithm of X.</dd>
+<dt>mod(X,Y)</dt><dd>The remainder after dividing X by Y (a floating-point modulo).</dd>
+<dt>pi()</dt><dd>An approximation of pi.</dd>
+<dt>pow(X,Y) / power(X,Y)</dt><dd>X raised to the power Y.</dd>
+<dt>radians(X)</dt><dd>Converts degrees into radians.</dd>
+<dt>sin(X) sinh(X)</dt><dd>Sine and hyperbolic sine of X (X in radians).</dd>
+<dt>sqrt(X)</dt><dd>The square root of X.</dd>
+<dt>tan(X) tanh(X)</dt><dd>Tangent and hyperbolic tangent of X (X in radians).</dd>
+<dt>trunc(X)</dt><dd>The representable integer closest to X in the direction of zero.</dd>
+</dl>
+
+</div>
+</details>
+
+<details id="on-conflict">
+<summary>ON CONFLICT clause</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">ON CONFLICT { ROLLBACK | ABORT | FAIL | IGNORE | REPLACE }
+-- as a column/table constraint:
+  ... CONSTRAINT ... ON CONFLICT resolution</pre>
+
+
+<p>The ON CONFLICT clause described here has been a part of SQLite since before version 3.0.0 (2004-06-18). It is a non-standard extension used to control what happens when a uniqueness or NOT NULL or CHECK constraint fails. (Note: this is distinct from the "ON CONFLICT" clause of an UPSERT, which is a different feature that happens to reuse the same keywords.)</p>
+<p>The ON CONFLICT algorithm may be one of the following five choices:</p>
+<dl>
+<dt>ROLLBACK</dt><dd>Aborts the current SQL statement with an error and rolls back the current transaction. If no transaction is active, this works the same as ABORT.</dd>
+<dt>ABORT</dt><dd>(the default) Aborts the current SQL statement with an error and reverts any changes made by the current statement, but changes made by prior statements within the same transaction are preserved and the transaction remains active.</dd>
+<dt>FAIL</dt><dd>Aborts the current SQL statement with an error but does not back out prior changes made by the statement that failed, and does not end the transaction.</dd>
+<dt>IGNORE</dt><dd>Skips the one row that contains the constraint violation and continues processing subsequent rows of the SQL statement as if nothing went wrong. No error is returned.</dd>
+<dt>REPLACE</dt><dd>When a UNIQUE or PRIMARY KEY constraint violation occurs, the pre-existing rows that are causing the constraint violation are removed prior to inserting or updating the current row. For a NOT NULL constraint, the NULL is replaced by the default value, or an ABORT occurs if there is no default value.</dd>
+</dl>
+<p>The conflict resolution algorithm can be specified per-statement using the "OR" keyword (for example, "INSERT OR IGNORE") or as a default within a table or index definition.</p>
+
+</div>
+</details>
+
+<details id="pragma">
+<summary>PRAGMA</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">PRAGMA [schema.]pragma-name
+PRAGMA [schema.]pragma-name = value
+PRAGMA [schema.]pragma-name ( argument )</pre>
+
+
+<p>The PRAGMA statement is an SQL extension specific to SQLite and used to modify the operation of the SQLite library or to query the SQLite library for internal (non-table) data. The PRAGMA statement is issued using the same interface as other SQLite commands but is different in important respects.</p>
+<p>Specific pragma statements may be removed and others added in future releases of SQLite. There is no guarantee of backwards compatibility. A pragma can take either zero or one argument. The argument is may be either in parentheses or it may be separated from the pragma name by an equal sign. No error is raised if an unknown pragma is used.</p>
+<h4>Commonly used pragmas</h4>
+<dl>
+<dt>PRAGMA foreign_keys = ON;</dt><dd>Enables enforcement of foreign key constraints. This is OFF by default for backwards compatibility and must be turned on for each database connection.</dd>
+<dt>PRAGMA journal_mode = WAL;</dt><dd>Sets the journaling mode. WAL (write-ahead logging) offers better concurrency for many applications.</dd>
+<dt>PRAGMA table_info(table-name);</dt><dd>Returns one row for each normal column in the named table, giving name, declared type, whether NOT NULL, default value and primary-key position.</dd>
+<dt>PRAGMA foreign_key_list(table-name);</dt><dd>Returns one row for each foreign key constraint on the named table.</dd>
+<dt>PRAGMA index_list(table-name);</dt><dd>Returns one row for each index associated with the named table.</dd>
+<dt>PRAGMA user_version;</dt><dd>Gets or sets a free-form integer stored in the database header that applications may use for their own schema-version tracking.</dd>
+<dt>PRAGMA integrity_check;</dt><dd>Looks for out-of-order records, missing pages, malformed records, and index/content inconsistencies, reporting problems it finds.</dd>
+</dl>
+
+</div>
+</details>
+
+<details id="reindex">
+<summary>REINDEX</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">REINDEX
+REINDEX collation-name
+REINDEX [schema.]table-or-index</pre>
+
+
+<p>The REINDEX command is used to delete and recreate indices from scratch. This is useful when the definition of a collation sequence has changed.</p>
+<p>If the REINDEX keyword is not followed by a collation-name or a database/table/index name, then all indices in all attached databases are rebuilt. If the argument is the name of a collation sequence, then all indices that use that named collation sequence are rebuilt. If the argument identifies a specific database table, then all indices associated with that table are rebuilt. If the argument identifies a specific index, then only that one index is recreated.</p>
+
+</div>
+</details>
+
+<details id="release">
+<summary>RELEASE SAVEPOINT</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">RELEASE [SAVEPOINT] savepoint-name</pre>
+
+
+<p>SAVEPOINTs are a method of creating transactions, similar to BEGIN and COMMIT, except that the SAVEPOINT and RELEASE commands are named and may be nested.</p>
+
+<p>The RELEASE command starts with the keyword RELEASE and is followed by the (optional) keyword SAVEPOINT and the name of the savepoint to release. Releasing a savepoint is a lot like committing: it removes the named savepoint (and any savepoints created after it) from the transaction stack. If the released savepoint is the outermost savepoint of a transaction started by SAVEPOINT, then the RELEASE command commits the transaction. Otherwise, the changes retained by the savepoint remain part of the enclosing transaction.</p>
+
+</div>
+</details>
+
+<details id="replace">
+<summary>REPLACE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">REPLACE INTO [schema.]table [ ( column [, column]... ) ]
+  { VALUES ( expr [, expr]... ) | select-stmt | DEFAULT VALUES }
+-- REPLACE is shorthand for INSERT OR REPLACE.</pre>
+
+
+<p>The REPLACE command is an alias for the "INSERT OR REPLACE" variant of the INSERT command. This alias is provided for compatibility with MySQL. See the INSERT command documentation for additional information.</p>
+<p>When a UNIQUE or PRIMARY KEY constraint violation occurs, REPLACE removes the pre-existing rows that are causing the constraint violation prior to inserting the current row, and the insert then proceeds. Because the conflicting row is deleted and a new one inserted, any columns not explicitly supplied revert to their default values.</p>
+
+</div>
+</details>
+
+<details id="returning">
+<summary>RETURNING clause</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">RETURNING result-column [, result-column]...
+
+result-column:  * | expr [ [AS] output-name ]
+-- valid on INSERT, UPDATE, and DELETE.</pre>
+
+
+<p>The RETURNING clause is a non-standard extension, added to SQLite in version 3.35.0 (2021-03-12), inspired by similar features in PostgreSQL. RETURNING may be added to the end of a DELETE, INSERT, or UPDATE statement to cause it to return one result row for each database row that is deleted, inserted, or updated.</p>
+<p>The RETURNING clause is followed by a comma-separated list of output expressions, which may be a "*" to return all columns of the affected row, a table-name.* to return all columns of a table, or an arbitrary expression that may reference the columns of the row being changed. In an INSERT or UPDATE, the values reported are the new values; in a DELETE, they are the values just before the row was removed.</p>
+<p>The RETURNING clause returns changes caused by the top-level INSERT, UPDATE, or DELETE statement only. It does not report changes caused by triggers or foreign key actions.</p>
+
+</div>
+</details>
+
+<details id="rollback">
+<summary>ROLLBACK TRANSACTION</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">ROLLBACK [TRANSACTION] [ TO [SAVEPOINT] savepoint-name ]</pre>
+
+
+<p>No changes can be made to the database except within a transaction. Any command that changes the database (basically, any SQL command other than SELECT) will automatically start a transaction if one is not already in effect. Automatically started transactions are committed when the last SQL statement finishes.</p>
+<p>Transactions can be started manually using the BEGIN command. Such transactions usually persist until the next COMMIT or ROLLBACK command, though a transaction will also ROLLBACK if the database is closed or if an error occurs and the ROLLBACK conflict resolution algorithm is specified.</p>
+
+<p>The ROLLBACK command reverts the state of the database back to what it was before the transaction was started (a BEGIN). The keyword TRANSACTION following ROLLBACK is optional.</p>
+<p>A ROLLBACK that occurs within a transaction started by a SAVEPOINT can be directed to roll back to a particular savepoint using the syntax "ROLLBACK TO savepoint-name" - this rewinds only to the named savepoint and does not cancel the outer transaction.</p>
+
+</div>
+</details>
+
+<details id="savepoint">
+<summary>SAVEPOINT</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">SAVEPOINT savepoint-name</pre>
+
+
+<p>SAVEPOINTs are a method of creating transactions, similar to BEGIN and COMMIT, except that the SAVEPOINT and RELEASE commands are named and may be nested.</p>
+
+<p>The SAVEPOINT command starts a new transaction with a name. The transaction name need not be unique. A SAVEPOINT can be started either within or outside of a BEGIN...COMMIT. When a SAVEPOINT is the outer-most savepoint and it is not within a BEGIN...COMMIT then the behavior is the same as BEGIN DEFERRED TRANSACTION.</p>
+<p>The ROLLBACK TO command reverts the state of the database back to what it was just after the corresponding SAVEPOINT. Note that unlike that plain ROLLBACK command (without the TO keyword) the ROLLBACK TO command does not cancel the transaction. Instead of cancelling the transaction, the ROLLBACK TO command restarts the transaction again at the beginning. All intervening SAVEPOINTs are cancelled, however.</p>
+
+</div>
+</details>
+
+<details id="select">
+<summary>SELECT</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">[ WITH [RECURSIVE] cte [, cte]... ]
+SELECT [ DISTINCT | ALL ] result-column [, result-column]...
+  [ FROM table-or-subquery [, ...] | join-clause ]
+  [ WHERE expr ]
+  [ GROUP BY expr [, expr]... [ HAVING expr ] ]
+  [ WINDOW name AS window-defn [, ...] ]
+[ { UNION [ALL] | INTERSECT | EXCEPT } select ]...
+  [ ORDER BY ordering-term [, ...] ]
+  [ LIMIT expr [ { OFFSET | , } expr ] ]
+
+join-clause:
+  table [ { [NATURAL] [LEFT|RIGHT|FULL] [OUTER] JOIN | INNER JOIN | CROSS JOIN }
+          table [ ON expr | USING (column...) ] ]...</pre>
+
+
+<p>The SELECT statement is used to query the database. The result of a SELECT is zero or more rows of data where each row has a fixed number of columns. A SELECT statement does not make any changes to the database.</p>
+<h4>Overall evaluation</h4>
+<p>The overall processing of a simple SELECT proceeds as follows: (1) the FROM clause is evaluated to produce a set of candidate result rows; (2) the WHERE clause is applied to filter those rows; (3) if there is a GROUP BY clause, rows are grouped and each group collapses to a single row, and the HAVING clause filters the groups; (4) the result expressions in the SELECT list (and any window functions) are computed; (5) if the SELECT is a compound select, the compound operator (UNION, INTERSECT, EXCEPT) combines result sets; (6) the ORDER BY clause sorts the rows; and (7) the LIMIT and OFFSET clauses restrict how many rows are returned.</p>
+<h4>The FROM clause and joins</h4>
+<p>The input data for a SELECT comes from the FROM clause, which may name one or more tables, subqueries, or table-valued functions joined together. SQLite supports INNER JOIN, LEFT [OUTER] JOIN, RIGHT [OUTER] JOIN, FULL [OUTER] JOIN, and CROSS JOIN. A join constraint is given with an ON expression or a USING (column-list) clause; a NATURAL join implicitly joins on all identically named columns.</p>
+<h4>WHERE, GROUP BY and HAVING</h4>
+<p>The WHERE clause restricts the rows that are operated upon to those for which the WHERE expression is true. The GROUP BY clause causes one or more rows of the result to be combined into a single row of output, and is normally used together with aggregate functions. The HAVING clause is like WHERE but is applied after grouping.</p>
+<h4>DISTINCT / ALL</h4>
+<p>If the SELECT keyword is followed by DISTINCT, duplicate rows are removed from the result set. If it is followed by ALL, or if neither keyword is present, all rows are returned.</p>
+<h4>Compound SELECT statements</h4>
+<p>Two or more simple SELECT statements may be connected together to form a compound SELECT using the UNION, UNION ALL, INTERSECT or EXCEPT operators. UNION returns rows in either result set (removing duplicates); UNION ALL returns all rows including duplicates; INTERSECT returns rows common to both; EXCEPT returns rows of the first that are not in the second.</p>
+<h4>ORDER BY, LIMIT and OFFSET</h4>
+<p>The ORDER BY clause sorts the returned rows; each term may be followed by COLLATE, ASC or DESC, and NULLS FIRST or NULLS LAST. The LIMIT clause places an upper bound on the number of rows returned. An optional OFFSET following LIMIT skips that many rows before beginning to return rows.</p>
+<h4>The VALUES clause</h4>
+<p>A "VALUES" clause is a list of one or more parenthesized lists of scalar values. A VALUES clause is itself a simple SELECT statement that returns the listed rows and can be used anywhere a SELECT is valid.</p>
+
+</div>
+</details>
+
+<details id="update">
+<summary>UPDATE</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">[ WITH [RECURSIVE] cte [, cte]... ]
+UPDATE [OR conflict] [schema.]table [ [AS] alias ]
+       [ INDEXED BY index | NOT INDEXED ]
+  SET { column | (column [, column]...) } = expr [, ...]
+  [ FROM table-or-subquery [, ...] | join-clause ]
+  [ WHERE expr ]
+  [ RETURNING result-column [, ...] ]
+  [ ORDER BY term ...  LIMIT expr [ OFFSET expr ] ]
+
+conflict:  ROLLBACK | ABORT | FAIL | IGNORE | REPLACE</pre>
+
+
+<p>An UPDATE statement is used to modify a subset of the values stored in zero or more rows of the database table identified by the qualified-table-name.</p>
+<p>If the UPDATE statement does not have a WHERE clause, all rows in the table are modified by the UPDATE. Otherwise, the UPDATE affects only those rows for which the WHERE clause boolean expression is true. It is not an error if the WHERE clause does not evaluate to true for any row in the table - this just means that the UPDATE statement affects zero rows.</p>
+<p>The modifications made to each row affected by an UPDATE statement are determined by the list of assignments following the SET keyword. Each assignment specifies a column name to the left of the equals sign and a scalar expression to the right. A single column-name can appear in only one assignment. Columns that do not appear in the list of assignments are left unmodified.</p>
+<p>An UPDATE statement may optionally include a FROM clause, which allows columns from other tables to appear in the WHERE clause and the SET expressions (a "join update"). An UPDATE may also carry an "OR conflict-clause" (for example UPDATE OR IGNORE) and/or a RETURNING clause. The optional ORDER BY and LIMIT clauses are only available if SQLite is built with SQLITE_ENABLE_UPDATE_DELETE_LIMIT.</p>
+
+</div>
+</details>
+
+<details id="upsert">
+<summary>UPSERT</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">INSERT ... 
+ON CONFLICT [ ( indexed-column [, ...] ) [ WHERE expr ] ]
+  DO { NOTHING
+     | UPDATE SET { col = expr | (col,...) = expr } [, ...]
+                [ WHERE expr ] }
+-- inside DO UPDATE, &quot;excluded.col&quot; = the row that would have been inserted.</pre>
+
+
+<p>UPSERT is a special syntax addition to INSERT that causes the INSERT to behave as an UPDATE or a no-op if the INSERT would violate a uniqueness constraint. UPSERT is not standard SQL. UPSERT in SQLite follows the syntax established by PostgreSQL. UPSERT syntax was added to SQLite with version 3.24.0 (2018-06-04).</p>
+<p>An UPSERT is an ordinary INSERT statement that is followed by one or more ON CONFLICT clauses. Each ON CONFLICT clause has an optional "conflict target" (the columns or constraint that might be violated) and a required "conflict action" which is either DO NOTHING or DO UPDATE.</p>
+<p>The special "DO NOTHING" action means that nothing happens when the constraint is violated - the offending row is simply skipped. The "DO UPDATE" action provides a SET clause (and an optional WHERE clause) that describes how to modify the existing conflicting row. Within the DO UPDATE clause, the special table name "excluded" refers to the row that would have been inserted had there been no conflict, so that old and new values can be combined.</p>
+<pre>INSERT INTO vocabulary(word, count) VALUES('jovial', 1)
+  ON CONFLICT(word) DO UPDATE SET count = count + 1;</pre>
+
+</div>
+</details>
+
+<details id="vacuum">
+<summary>VACUUM</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">VACUUM
+VACUUM schema-name
+VACUUM [schema-name] INTO filename</pre>
+
+
+<p>The VACUUM command rebuilds the database file, repacking it into a minimal amount of disk space. There are several reasons an application might do this: unless SQLite is running in "auto_vacuum=FULL" mode, when a large amount of data is deleted from the database file it leaves behind empty space, or "free" database pages. This means the database file might be larger than strictly necessary. Also, frequent inserts, updates, and deletes can cause the information in the database to become fragmented. The VACUUM command cleans up this by copying the contents into a temporary database file and then overwriting the original from the copy.</p>
+<p>When run without arguments, the VACUUM command operates on the main database. To vacuum an attached database, use "VACUUM schema-name". The "VACUUM INTO filename" variant writes a compacted copy of the database into a separate file rather than overwriting the original, which is also a convenient way to make a backup of a live database.</p>
+<p>A VACUUM will fail if there is an open transaction on the database connection, or if there are one or more active SQL statements.</p>
+
+</div>
+</details>
+
+<details id="window-functions">
+<summary>window functions</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">window-function( [expr] ) [ FILTER ( WHERE expr ) ]
+  OVER { window-name | ( window-defn ) }
+
+window-defn:
+  [ PARTITION BY expr [, ...] ]
+  [ ORDER BY term [, ...] ]
+  [ { RANGE | ROWS | GROUPS } frame-spec ]</pre>
+
+
+<p>Window functions are a special class of SQL functions that perform a calculation across a set of table rows that are somehow related to the current row. This is comparable to the type of calculation that can be done with an aggregate function. But unlike regular aggregate functions, use of a window function does not cause rows to become grouped into a single output row - the rows retain their separate identities. Behind the scenes, the window function is able to access more than just the current row of the query result.</p>
+<p>A window function is any function that is followed by an OVER clause. The OVER clause may contain a PARTITION BY sub-clause (which divides the rows into groups called partitions), an ORDER BY sub-clause (which defines the order of rows within each partition), and a frame specification (which limits the set of rows within the partition that contribute to the calculation for the current row).</p>
+<h4>Built-in window functions</h4>
+<dl>
+<dt>row_number()</dt><dd>The number of the row within the current partition, counting from 1.</dd>
+<dt>rank()</dt><dd>The rank of the current row with gaps; rows with equal values share a rank and the next rank skips values.</dd>
+<dt>dense_rank()</dt><dd>The rank of the current row without gaps.</dd>
+<dt>percent_rank()</dt><dd>A value between 0.0 and 1.0 giving the relative rank of the row: (rank - 1) / (partition rows - 1).</dd>
+<dt>cume_dist()</dt><dd>The cumulative distribution: the number of partition rows preceding or peer with the current row, divided by the total partition rows.</dd>
+<dt>ntile(N)</dt><dd>Divides the partition as equally as possible into N groups and returns the group number of the current row.</dd>
+<dt>lag(expr, offset, default)</dt><dd>Returns the result of evaluating expr for the row that is offset rows before the current row within the partition.</dd>
+<dt>lead(expr, offset, default)</dt><dd>Returns the result of evaluating expr for the row that is offset rows after the current row within the partition.</dd>
+<dt>first_value(expr) / last_value(expr) / nth_value(expr, N)</dt><dd>Return the value of expr evaluated against the first, last, or N-th row of the window frame.</dd>
+</dl>
+<p>Any aggregate function (such as sum(), avg(), or count()) may also be used as a window function by adding an OVER clause.</p>
+<pre>SELECT name, department, salary,
+       rank() OVER (PARTITION BY department ORDER BY salary DESC) AS rnk
+FROM employee;</pre>
+
+</div>
+</details>
+
+<details id="with">
+<summary>WITH clause</summary>
+<div class="body">
+<div class="syntax-label">Syntax</div>
+<pre class="syntax">WITH [RECURSIVE] cte-name [ ( column [, ...] ) ] AS
+  [ [NOT] MATERIALIZED ] ( select-stmt )
+  [, cte-name AS ( select-stmt ) ]...
+{ select-stmt | insert-stmt | update-stmt | delete-stmt }</pre>
+
+
+<p>Common table expressions (CTEs) are a feature of SQL that allow a query to be composed from named subqueries defined at the top of the statement using the WITH clause. A WITH clause can appear at the beginning of a SELECT, INSERT, UPDATE, DELETE, or CREATE VIEW statement.</p>
+<p>Common table expressions come in two forms: "ordinary" and "recursive". Ordinary common table expressions are simply a convenient way to factor out subqueries, making the overall statement easier to read and understand. An ordinary CTE named "name" can be referenced by name anywhere a table could be referenced in the statement.</p>
+<p>A recursive common table expression is a CTE whose defining SELECT refers to itself. Recursive CTEs are introduced by adding the RECURSIVE keyword after WITH. A recursive CTE is made up of an "initial-select" (the anchor) that provides the starting rows, followed by a compound operator (usually UNION ALL or UNION) and a "recursive-select" that refers back to the CTE and provides new rows on each pass until it produces no more. Recursive CTEs are used to query hierarchical/tree-structured data and to generate series of values.</p>
+<pre>WITH RECURSIVE cnt(x) AS (
+  VALUES(1)
+  UNION ALL
+  SELECT x+1 FROM cnt WHERE x&lt;100
+)
+SELECT x FROM cnt;</pre>
+
+</div>
+</details>
+
+</body>
+</html>
